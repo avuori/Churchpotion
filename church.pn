@@ -1,0 +1,116 @@
+#
+# Playing with Church numerals in Potion.
+#
+# By Arto Vuori.
+#
+
+church = (n):
+	if (n == 0):
+		(f): (x): x...
+	else:
+		(f): (x): f (church (n-1) (f) (x))....
+
+unchurch = (n): n ((x): x+1.) (0).
+
+plus = (m): (n): (f): (x): m (f) (n (f) (x))....
+
+succ = (n): plus (n) (church (1)).
+
+zero  = church (0)
+one   = succ (zero)
+two   = succ (succ (zero))
+three = succ (succ (succ (zero)))
+
+mult = (m): (n): (f): (x): m (n (f)) (x)....
+
+four  = mult (two) (two)
+eight = mult (four) (two)
+ten   = plus (eight) (two)
+
+exp = (m): (n): n (mult (m)) (one)..
+
+kilobyte = exp (two) (ten)
+
+pred = (n): (f): (x): n ((g): (h): h (g (f))..) ((u): x.) ((u): u.)...
+
+nine = pred (ten)
+
+sub = (m): (n): n (pred) (m)..
+
+seven = sub (eight) (one)
+
+_T = (): (a): (b): a...
+_F = (): (a): (b): b...
+T = (a): (b): a..
+F = (a): (b): b..
+
+zero? = (n): n ((x): _F.) (_T).
+
+equal? = (m): (n): zero? (sub (m) (n)) ()..
+
+passed = zero
+failed = zero
+
+pass = (a, b):
+	"." print
+	passed = succ (passed).
+
+fail = (a, b):
+	"F" print
+	("Fail: ", unchurch (a), " != ", unchurch (b), "\n") join print
+	failed = succ (failed).
+
+assertEqual = (actual, expected):
+	a = unchurch (actual)
+	b = unchurch (expected)
+	if (a == b):
+		pass ()
+	. else:
+		fail (actual, expected)..
+
+assertTrue = (P):
+	if (P (true) (false)):
+		pass ()
+	. else:
+		fail (church(0), church(1))..
+	
+
+_ = (actual, expected):
+	P = equal? (actual) (expected)
+	F = P (pass) (fail)
+	F ().
+
+assertEqual (zero, church (0))
+assertEqual (one, church (1))
+assertEqual (two, church (2))
+assertEqual (three, church (3))
+assertEqual (four, church (4))
+assertEqual (seven, church (7))
+assertEqual (eight, church (8))
+assertEqual (nine, church (9))
+assertEqual (ten, church (10))
+assertEqual (kilobyte, church (1024))
+assertEqual (sub (zero) (zero), church(0))
+assertTrue (zero? (zero))
+assertTrue (zero? (one))
+assertTrue (zero? (two))
+#assertTrue (equal? (zero) (zero))
+
+total = plus (passed) (failed)
+
+("[", unchurch(passed), "/", unchurch(total), "]\n") join print
+
+"\n" print
+
+0 to 8 (n):
+	("church (", n, ") -: ") join string print
+	unchurch (church (n)) string print
+	"\n" print.
+
+"\n" print
+
+0 to 3 (m):
+	0 to 3 (n):
+		("church(", m, ") + church(", n, ") :- ") join string print
+		unchurch (plus (church (m)) (church (n))) string print
+		"\n" print..
